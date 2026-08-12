@@ -41,17 +41,17 @@
     <section class="card">
       <div id="setup">
         <h1>Enable your microphone</h1>
-        <p>Your prompt is still hidden. Click the button below to grant microphone access. Once the microphone is ready, the assessment will release your prompt and begin the preparation timer.</p>
+        <p>Your prompt is still hidden. Click the button below to grant microphone access. Once the microphone is ready, the assessment will release your prompt and recording will begin immediately.</p>
         <button id="micBtn" class="primary">Enable microphone</button>
         <div id="setupStatus" class="status hidden"></div>
         <p class="micro">Only the response you record after the preparation countdown is saved. This page does not record continuously.</p>
       </div>
 
       <div id="active" class="hidden">
-        <div id="phase" class="phase">PREPARATION</div>
+        <div id="phase" class="phase">RECORDING</div>
         <div id="prompt" class="prompt"></div>
-        <div id="timer" class="timer">00:30</div>
-        <p id="instruction">Read the prompt and prepare your response. Recording will begin automatically when the countdown ends.</p>
+        <div id="timer" class="timer">00:35</div>
+        <p id="instruction">Speak when ready. Recording begins as soon as the prompt appears, and silence counts toward your time.</p>
         <button id="stopBtn" class="primary hidden">Stop & submit early</button>
         <div id="activeStatus" class="status hidden"></div>
       </div>
@@ -116,7 +116,8 @@
 
   function runCountdown(seconds, phase, done) {
     clearInterval(timer);
-    $('phase').textContent = phase;
+    if (phase === 'RECORDING') $('phase').innerHTML = '<span class="dot"></span>RECORDING';
+    else $('phase').textContent = phase;
     document.body.classList.toggle('recording', phase === 'RECORDING');
     let remaining = seconds;
     renderTime(remaining);
@@ -148,10 +149,9 @@
     recorder.start(250);
     recordStartedAt = Date.now();
 
-    $('phase').innerHTML = '<span class="dot"></span>RECORDING';
-    $('instruction').textContent = 'Speak naturally as if you were handling the situation in real time. You may stop early when your answer is complete.';
+    $('instruction').textContent = 'Speak naturally as if you were handling the situation in real time. Silence counts toward your time; you may stop early when your answer is complete.';
     show('stopBtn');
-    runCountdown(Math.max(5, Number(armedPayload.recordSeconds || 60)), 'RECORDING', stopAndSubmit);
+    runCountdown(Math.max(5, Number(armedPayload.recordSeconds || 35)), 'RECORDING', stopAndSubmit);
   }
 
   function stopAndSubmit() {
