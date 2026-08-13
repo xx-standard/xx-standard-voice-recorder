@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>XX Standard Voice Response</title>
+  <style>
+    :root{--green:#123528;--green2:#0E2A25;--gold:#B28E5C;--cream:#F5F2EC;--white:#fff;--muted:#6F756F;--line:#D9D3C9;--danger:#8A3434}
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--cream);font-family:Arial,sans-serif;color:var(--green2);min-height:100%}
+    .shell{max-width:760px;margin:0 auto;padding:26px 16px 50px}
+    .brandbar{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+    .mark{width:46px;height:46px;background:#fff;border:1px solid var(--gold);display:grid;place-items:center;color:var(--green);font-weight:700}
+    .brand{font-weight:700;color:var(--green);letter-spacing:.03em}
+    .sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .card{background:#fff;border:1px solid rgba(178,142,92,.7);border-radius:14px;padding:30px;box-shadow:0 8px 26px rgba(14,42,37,.05)}
+    h1{font-size:26px;color:var(--green);margin:0 0 12px}
+    p{line-height:1.6}
+    .primary{background:var(--green);color:#E8E1D7;border:0;border-radius:9px;padding:13px 18px;font-weight:700;cursor:pointer;font-size:14px}
+    .primary:disabled{opacity:.45;cursor:not-allowed}
+    .hidden{display:none!important}
+    .prompt{margin:18px 0;padding:20px;background:#FBFAF7;border:1px solid var(--line);border-radius:10px;font-size:16px;line-height:1.7;user-select:none;-webkit-user-select:none}
+    .timer{font-size:42px;font-variant-numeric:tabular-nums;font-weight:700;color:var(--green);margin:18px 0 6px}
+    .phase{font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--gold)}
+    .recording .timer{color:var(--danger)}
+    .dot{display:inline-block;width:10px;height:10px;background:var(--danger);border-radius:50%;margin-right:7px;animation:pulse 1s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+    .micro{font-size:12px;color:var(--muted)}
+    .status{padding:12px;border:1px solid var(--line);border-radius:9px;background:#FCFBF8;font-size:13px;line-height:1.5;margin-top:16px}
+    .error{color:var(--danger)}
+    @media(max-width:600px){.card{padding:22px}.timer{font-size:36px}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="brandbar">
+      <div class="mark">XX</div>
+      <div><div class="brand">XX Standard</div><div class="sub">Operations Work Sample · Spoken Response</div></div>
+    </div>
+
+    <section class="card">
+      <div id="setup">
+        <h1>Enable your microphone</h1>
+        <p>Your prompt is still hidden. Click below to grant microphone access. Microphone setup is not timed.</p>
+        <button id="micBtn" class="primary">Enable microphone</button>
+        <div id="setupStatus" class="status hidden"></div>
+        <p class="micro">Once permission is ready, your prompt appears and the 35-second recording begins immediately. Upload time is not part of your answer clock.</p>
+      </div>
+
+      <div id="active" class="hidden">
+        <div id="phase" class="phase">RECORDING</div>
+        <div id="prompt" class="prompt"></div>
+        <div id="timer" class="timer">00:35</div>
+        <p id="instruction">Speak when ready. Recording begins as soon as the prompt appears, and silence counts toward your time.</p>
+        <button id="stopBtn" class="primary hidden">Stop & submit early</button>
+        <button id="retryBtn" class="primary hidden">Retry upload</button>
+        <div id="activeStatus" class="status hidden"></div>
+      </div>
+    </section>
+  </main>
+
+  <iframe id="armFrame" name="xxArmFrame" class="hidden" title=""></iframe>
+  <iframe id="uploadFrame" name="xxUploadFrame" class="hidden" title=""></iframe>
+
+<script>
+(() => {
+  const params = new URLSearchParams(window.location.search);
+  const token = String(params.get('token') || '').trim();
+  const stage = Number(params.get('stage') || 0);
+  const endpoint = String(params.get('endpoint') || '').trim();
+  const recorderLoadedAt = Date.now();
+
+  let stream = null;
+  let recorder = null;
+  let chunks = [];
+  let armedPayload = null;
+  let timer = null;
+  let recordStartedAt = null;
+  let recordStoppedAt = null;
+  let submitted = false;
+  let focusLosses = 0;
+  let micRequestStartedAt = null;
+  let armRequestId = '';
+  let uploadRequestId = '';
+  let lastUpload = null;
+  let uploadTimeout = null;
+
+  const $ = id => document.getElementById(id);
+  const show = id => $(id).classList.remove('hidden');
+  const hide = id => $(id).classList.add('hidden');
+
+  window.addEventListener('load', () => {
+    $('micBtn').addEventListener('click', enableMicrophone);
+    $('stopBtn').addEventListener('click', stopAndSubmit);
+    $('retryBtn').addEventListener('click', retryUpload);
+    installGuardrails();
+    installBridgeMessaging();
+
+    if (!token || !stage || !/^https:\/\//i.test(endpoint)) {
+      $('micBtn').disabled = true;
+      setStatus('setupStatus', 'This voice-response link is incomplete. Return to your XX Standard assessment and try the spoken stage again.', true);
+    }
+  });
+
+  function installBridgeMessaging() {
+    window.addEventListener('message', evt => {
+      const data = evt.data || {};
+
+      if (data.type === 'xx-voice-arm-result' && data.requestId === armRequestId) {
+        const payload = data.payload || {};
+        if (!payload.ok) {
+          $('micBtn').disabled = false;
+          setStatus('setupStatus', 'Unable to start the spoken stage: ' + (payload.message || 'Unknown error'), true);
+          return;
+        }
+        if (String(payload.token || '') !== token || Number(payload.stage) !== stage) {
+          $('micBtn').disabled = false;
+          setStatus('setupStatus', 'The spoken stage could not be verified. Return to the assessment and try again.', true);
+          return;
+        }
+        armedPayload = payload;
+        beginPromptFlow();
+        return;
+      }
+
+      if (data.type === 'xx-voice-upload-result' && data.requestId === uploadRequestId) {
+        clearTimeout(uploadTimeout);
+        uploadTimeout = null;
+        if (!data.ok) {
+          submitted = false;
+          show('retryBtn');
+          setStatus('activeStatus', (data.title ? data.title + ': ' : '') + (data.message || 'The upload could not be completed.'), true);
+          $('phase').textContent = 'UPLOAD PROBLEM';
+          $('instruction').textContent = 'Your recording is still held on this page. Retry the upload; you will not need to record again.';
+          return;
+        }
+        hide('retryBtn');
+        $('phase').textContent = 'SAVED';
+        $('instruction').textContent = 'Response saved. Continuing to the next stage…';
+        setStatus('activeStatus', 'Saved successfully. Returning to the assessment…', false);
+        setTimeout(returnToAssessment, 450);
+      }
+    });
+  }
+
+  async function enableMicrophone() {
+    $('micBtn').disabled = true;
+    micRequestStartedAt = Date.now();
+    setStatus('setupStatus', 'Requesting microphone permission…', false);
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+        throw new Error('This browser does not support in-browser audio recording. Try a current Chrome, Edge, Safari, or Firefox browser.');
+      }
+      stream = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1, echoCancellation:true, noiseSuppression:true}});
+      const micReadyAt = Date.now();
+      setStatus('setupStatus', 'Microphone ready. Loading your prompt…', false);
+      requestArmPayload(micReadyAt);
+    } catch (err) {
+      $('micBtn').disabled = false;
+      setStatus('setupStatus', 'Microphone error: ' + messageOf(err), true);
+    }
+  }
+
+  function requestArmPayload(micReadyAt) {
+    armRequestId = makeId('arm');
+    const q = new URLSearchParams({
+      voiceBridge:'1',
+      token:token,
+      stage:String(stage),
+      requestId:armRequestId,
+      permissionMs:String(Math.max(0, micReadyAt - (micRequestStartedAt || micReadyAt))),
+      recorderLoadedAt:String(recorderLoadedAt),
+      micReadyAt:String(micReadyAt)
+    });
+    $('armFrame').src = endpoint + (endpoint.includes('?') ? '&' : '?') + q.toString();
+  }
+
+  function beginPromptFlow() {
+    hide('setup');
+    show('active');
+    $('prompt').textContent = armedPayload.prompt || '';
+    const prep = Math.max(0, Number(armedPayload.prepSeconds || 0));
+    if (prep > 0) runCountdown(prep, 'PREPARATION', startRecording);
+    else startRecording();
+  }
+
+  function runCountdown(seconds, phase, done) {
+    clearInterval(timer);
+    if (phase === 'RECORDING') $('phase').innerHTML = '<span class="dot"></span>RECORDING';
+    else $('phase').textContent = phase;
+    document.body.classList.toggle('recording', phase === 'RECORDING');
+    let remaining = seconds;
+    renderTime(remaining);
+    timer = setInterval(() => {
+      remaining--;
+      renderTime(Math.max(0, remaining));
+      if (remaining <= 0) {
+        clearInterval(timer);
+        timer = null;
+        done();
+      }
+    }, 1000);
+  }
+
+  function startRecording() {
+    if (!stream || submitted) return;
+    chunks = [];
+    const mime = chooseMimeType();
+    const options = mime ? {mimeType:mime, audioBitsPerSecond:32000} : {audioBitsPerSecond:32000};
+    try {
+      recorder = new MediaRecorder(stream, options);
+    } catch (_) {
+      recorder = new MediaRecorder(stream);
+    }
+
+    recorder.ondataavailable = evt => { if (evt.data && evt.data.size) chunks.push(evt.data); };
+    recorder.onerror = evt => setStatus('activeStatus', 'Recording error: ' + messageOf(evt.error || evt), true);
+    recorder.onstop = finalizeUpload;
+    recorder.start(250);
+    recordStartedAt = Date.now();
+
+    $('instruction').textContent = 'Speak naturally as if you were handling the situation in real time. Silence counts toward your time; you may stop early when your answer is complete.';
+    show('stopBtn');
+    runCountdown(Math.max(5, Number(armedPayload.recordSeconds || 35)), 'RECORDING', stopAndSubmit);
+  }
+
+  function stopAndSubmit() {
+    if (submitted || !recorder) return;
+    submitted = true;
+    recordStoppedAt = Date.now();
+    hide('stopBtn');
+    clearInterval(timer);
+    timer = null;
+    $('phase').textContent = 'UPLOADING';
+    $('instruction').textContent = 'Saving your response. Upload time does not count against your answer.';
+    setStatus('activeStatus', 'Preparing audio…', false);
+    try {
+      if (recorder.state !== 'inactive') recorder.stop();
+      else finalizeUpload();
+    } catch (err) {
+      submitted = false;
+      setStatus('activeStatus', 'Unable to stop recording: ' + messageOf(err), true);
+    }
+  }
+
+  function finalizeUpload() {
+    try { if (stream) stream.getTracks().forEach(t => t.stop()); } catch (_) {}
+    const mime = (recorder && recorder.mimeType) || 'audio/webm';
+    const blob = new Blob(chunks, {type:mime});
+    if (!blob.size) {
+      setStatus('activeStatus', 'No audio was captured. Return to the assessment and try the spoken stage again.', true);
+      submitted = false;
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => {
+      submitted = false;
+      setStatus('activeStatus', 'Could not prepare the recording for upload.', true);
+    };
+    reader.onloadend = () => {
+      const dataUrl = String(reader.result || '');
+      const comma = dataUrl.indexOf(',');
+      const base64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+      lastUpload = {
+        base64:base64,
+        mime:mime,
+        byteSize:blob.size,
+        durationMs:Math.max(0, (recordStoppedAt || Date.now()) - (recordStartedAt || (recordStoppedAt || Date.now())))
+      };
+      submitUpload(lastUpload);
+    };
+    reader.readAsDataURL(blob);
+  }
+
+  function submitUpload(payload) {
+    if (!armedPayload || !armedPayload.endpoint || !payload) {
+      submitted = false;
+      show('retryBtn');
+      return setStatus('activeStatus', 'Upload information is missing.', true);
+    }
+
+    uploadRequestId = makeId('upload');
+    const uploadStartedAt = Date.now();
+    hide('retryBtn');
+    setStatus('activeStatus', `Uploading ${Math.round(payload.byteSize/1024)} KB…`, false);
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = armedPayload.endpoint;
+    form.target = 'xxUploadFrame';
+    form.style.display = 'none';
+
+    const fields = {
+      kind:'voice',
+      returnMode:'bridge',
+      requestId:uploadRequestId,
+      token:armedPayload.token,
+      stage:String(armedPayload.stage),
+      nonce:armedPayload.nonce,
+      signature:armedPayload.signature,
+      mime:payload.mime,
+      durationMs:String(payload.durationMs),
+      uploadStartedAt:String(uploadStartedAt),
+      audioBase64:payload.base64,
+      focusLosses:String(focusLosses),
+      userAgent:navigator.userAgent
+    };
+
+    Object.keys(fields).forEach(name => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = fields[name] == null ? '' : String(fields[name]);
+      form.appendChild(input);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
+    form.remove();
+
+    clearTimeout(uploadTimeout);
+    uploadTimeout = setTimeout(() => {
+      submitted = false;
+      show('retryBtn');
+      $('phase').textContent = 'UPLOAD DELAY';
+      $('instruction').textContent = 'The upload response is taking longer than expected. Your recording is still held on this page; retrying is safe.';
+      setStatus('activeStatus', 'The network is taking longer than expected. Tap Retry upload.', true);
+    }, 30000);
+  }
+
+  function retryUpload() {
+    if (!lastUpload) return;
+    submitted = true;
+    $('phase').textContent = 'UPLOADING';
+    $('instruction').textContent = 'Retrying the same recording. You do not need to answer again.';
+    submitUpload(lastUpload);
+  }
+
+  function returnToAssessment() {
+    const q = new URLSearchParams({token:token, resume:'1'});
+    window.location.replace(endpoint + (endpoint.includes('?') ? '&' : '?') + q.toString());
+  }
+
+  function installGuardrails() {
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('copy', e => e.preventDefault());
+    document.addEventListener('paste', e => e.preventDefault());
+    document.addEventListener('keydown', e => {
+      const key = String(e.key || '').toLowerCase();
+      if ((e.ctrlKey || e.metaKey) && ['c','v','x','u','s','p'].includes(key)) e.preventDefault();
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden' && armedPayload && !submitted) focusLosses++;
+    });
+  }
+
+  function chooseMimeType() {
+    const types = ['audio/webm;codecs=opus','audio/mp4','audio/webm','audio/ogg;codecs=opus'];
+    for (const t of types) {
+      try { if (MediaRecorder.isTypeSupported(t)) return t; } catch (_) {}
+    }
+    return '';
+  }
+
+  function setStatus(id, text, isError) {
+    const el = $(id);
+    el.textContent = text;
+    el.classList.toggle('error', !!isError);
+    show(id);
+  }
+
+  function renderTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    $('timer').textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  }
+
+  function makeId(prefix) {
+    try { if (crypto && crypto.randomUUID) return prefix + '-' + crypto.randomUUID(); } catch (_) {}
+    return prefix + '-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+  }
+
+  function messageOf(err) {
+    return err && err.message ? err.message : String(err || 'Unknown error');
+  }
+})();
+</script>
+</body>
+</html>
