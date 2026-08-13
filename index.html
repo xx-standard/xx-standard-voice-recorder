@@ -42,7 +42,7 @@
       <div class="notice">
         <strong>Before you begin</strong>
         <p>Once started, the assessment cannot be paused or restarted. Each stage has its own timer. You will not be able to return to a prior stage.</p>
-        <p>Timing, copy/paste attempts, and tab/window focus changes are logged. The two spoken responses are recorded only when you intentionally open the voice recorder and enable your microphone.</p>
+        <p>Timing, copy/paste attempts, and tab/window focus changes are logged. The two spoken responses are recorded only when you intentionally continue to the microphone step and enable your microphone.</p>
       </div>
 
       <label class="checkrow">
@@ -51,7 +51,7 @@
       </label>
 
       <button id="startBtn" class="primary" disabled>Begin assessment</button>
-      <p class="micro">Use a modern desktop or mobile browser. For the two spoken stages, your browser will ask for microphone permission in a separate recorder tab.</p>
+      <p class="micro">Use a modern desktop or mobile browser. For the two spoken stages, the same browser tab will briefly move to the secure recorder page for microphone permission, then return here automatically.</p>
     </section>
 
     <section id="assessment" class="hidden">
@@ -80,8 +80,8 @@
         <div id="voiceArea" class="hidden">
           <div class="voice-box">
             <h2>Spoken response</h2>
-            <p id="voiceInstructions">Your prompt will remain hidden until the separate recorder has microphone permission.</p>
-            <button id="voiceBtn" class="primary">Open voice recorder</button>
+            <p id="voiceInstructions">Your prompt will remain hidden until the microphone is ready.</p>
+            <a id="voiceBtn" class="primary voice-link" href="#" target="_top">Continue to microphone</a>
             <p class="micro">Once your microphone is ready, the prompt appears and recording begins immediately. You have up to 35 seconds. One recording only.</p>
           </div>
         </div>
@@ -100,6 +100,7 @@
 
   <script>
     const INITIAL_TOKEN = <?!= JSON.stringify(initialToken) ?>;
+    const INITIAL_AUTO_RESUME = <?!= JSON.stringify(!!initialAutoResume) ?>;
   </script>
   <?!= include('Client'); ?>
 </body>
