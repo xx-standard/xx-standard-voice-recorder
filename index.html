@@ -1,274 +1,106 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
+  <base target="_top">
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>XX Standard Voice Response</title>
-  <style>
-    :root{--green:#123528;--green2:#0E2A25;--gold:#B28E5C;--cream:#F5F2EC;--white:#fff;--muted:#6F756F;--line:#D9D3C9;--danger:#8A3434}
-    *{box-sizing:border-box}
-    html,body{margin:0;background:var(--cream);font-family:Arial,sans-serif;color:var(--green2);min-height:100%}
-    .shell{max-width:760px;margin:0 auto;padding:26px 16px 50px}
-    .brandbar{display:flex;align-items:center;gap:12px;margin-bottom:20px}
-    .mark{width:46px;height:46px;background:#fff;border:1px solid var(--gold);display:grid;place-items:center;color:var(--green);font-weight:700}
-    .brand{font-weight:700;color:var(--green);letter-spacing:.03em}
-    .sub{font-size:12px;color:var(--muted);margin-top:2px}
-    .card{background:#fff;border:1px solid rgba(178,142,92,.7);border-radius:14px;padding:30px;box-shadow:0 8px 26px rgba(14,42,37,.05)}
-    h1{font-size:26px;color:var(--green);margin:0 0 12px}
-    p{line-height:1.6}
-    .primary{background:var(--green);color:#E8E1D7;border:0;border-radius:9px;padding:13px 18px;font-weight:700;cursor:pointer;font-size:14px}
-    .primary:disabled{opacity:.45;cursor:not-allowed}
-    .hidden{display:none!important}
-    .prompt{margin:18px 0;padding:20px;background:#FBFAF7;border:1px solid var(--line);border-radius:10px;font-size:16px;line-height:1.7;user-select:none;-webkit-user-select:none}
-    .timer{font-size:42px;font-variant-numeric:tabular-nums;font-weight:700;color:var(--green);margin:18px 0 6px}
-    .phase{font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--gold)}
-    .recording .timer{color:var(--danger)}
-    .dot{display:inline-block;width:10px;height:10px;background:var(--danger);border-radius:50%;margin-right:7px;animation:pulse 1s infinite}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
-    .micro{font-size:12px;color:var(--muted)}
-    .status{padding:12px;border:1px solid var(--line);border-radius:9px;background:#FCFBF8;font-size:13px;line-height:1.5;margin-top:16px}
-    .error{color:var(--danger)}
-    @media(max-width:600px){.card{padding:22px}.timer{font-size:36px}}
-  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <?!= include('Styles'); ?>
 </head>
 <body>
   <main class="shell">
-    <div class="brandbar">
+    <header class="brandbar">
       <div class="mark">XX</div>
-      <div><div class="brand">XX Standard</div><div class="sub">Voice Response</div></div>
-    </div>
+      <div>
+        <div class="brand">XX Standard</div>
+        <div class="subbrand">Operations Work Sample</div>
+      </div>
+    </header>
 
-    <section class="card">
-      <div id="setup">
-        <h1>Enable your microphone</h1>
-        <p>Your prompt is still hidden. Click the button below to grant microphone access. Once the microphone is ready, the assessment will release your prompt and recording will begin immediately.</p>
-        <button id="micBtn" class="primary">Enable microphone</button>
-        <div id="setupStatus" class="status hidden"></div>
-        <p class="micro">Only the response you record after the preparation countdown is saved. This page does not record continuously.</p>
+    <section id="loading" class="card center">
+      <div class="spinner"></div>
+      <p>Loading your assessment…</p>
+    </section>
+
+    <section id="error" class="card hidden">
+      <h1>Unable to open assessment</h1>
+      <p id="errorText"></p>
+    </section>
+
+    <section id="landing" class="card hidden">
+      <div class="eyebrow">FINALIST WORK SAMPLE</div>
+      <h1 id="welcomeName">Welcome</h1>
+      <p class="lede">This assessment is designed to show how you think and communicate during real day-to-day operations at XX Standard.</p>
+
+      <div class="facts">
+        <div><strong>6 stages</strong><span>4 written + 2 spoken</span></div>
+        <div><strong>~7–9 minutes</strong><span>timed, one attempt</span></div>
+        <div><strong>No outside help</strong><span>complete independently</span></div>
       </div>
 
-      <div id="active" class="hidden">
-        <div id="phase" class="phase">RECORDING</div>
+      <div class="notice">
+        <strong>Before you begin</strong>
+        <p>Once started, the assessment cannot be paused or restarted. Each stage has its own timer. You will not be able to return to a prior stage.</p>
+        <p>Timing, copy/paste attempts, and tab/window focus changes are logged. The two spoken responses are recorded only when you intentionally open the voice recorder and enable your microphone.</p>
+      </div>
+
+      <label class="checkrow">
+        <input id="certify" type="checkbox">
+        <span>I will complete this work sample myself, without generative AI or outside assistance, and I understand the timing/activity notice above.</span>
+      </label>
+
+      <button id="startBtn" class="primary" disabled>Begin assessment</button>
+      <p class="micro">Use a modern desktop or mobile browser. For the two spoken stages, your browser will ask for microphone permission in a separate recorder tab.</p>
+    </section>
+
+    <section id="assessment" class="hidden">
+      <div class="progress-wrap">
+        <div class="progress-meta">
+          <span id="stageLabel">Stage 1 of 6</span>
+          <span id="timer" class="timer">01:30</span>
+        </div>
+        <div class="progress"><div id="progressBar"></div></div>
+      </div>
+
+      <div class="card stage-card">
+        <div id="stageType" class="eyebrow">WRITTEN RESPONSE</div>
+        <h1 id="stageTitle"></h1>
         <div id="prompt" class="prompt"></div>
-        <div id="timer" class="timer">00:35</div>
-        <p id="instruction">Speak when ready. Recording begins as soon as the prompt appears, and silence counts toward your time.</p>
-        <button id="stopBtn" class="primary hidden">Stop & submit early</button>
-        <div id="activeStatus" class="status hidden"></div>
+
+        <div id="writtenArea" class="hidden">
+          <textarea id="answer" spellcheck="true" autocomplete="off" placeholder="Type your response here…"></textarea>
+          <div class="answer-meta">
+            <span id="wordCount">0 words</span>
+            <span id="wordLimit"></span>
+          </div>
+          <button id="submitBtn" class="primary">Submit & continue</button>
+        </div>
+
+        <div id="voiceArea" class="hidden">
+          <div class="voice-box">
+            <h2>Spoken response</h2>
+            <p id="voiceInstructions">Your prompt will remain hidden until the separate recorder has microphone permission.</p>
+            <button id="voiceBtn" class="primary">Open voice recorder</button>
+            <p class="micro">Once your microphone is ready, the prompt appears and recording begins immediately. You have up to 35 seconds. One recording only.</p>
+          </div>
+        </div>
       </div>
+
+      <div id="toast" class="toast hidden"></div>
+    </section>
+
+    <section id="complete" class="card center hidden">
+      <div class="done-mark">✓</div>
+      <h1>Work sample complete</h1>
+      <p>Your responses have been saved. Thank you for completing the XX Standard Operations Work Sample.</p>
+      <p class="micro">You may close this window.</p>
     </section>
   </main>
 
-<script>
-(() => {
-  let stream = null;
-  let recorder = null;
-  let chunks = [];
-  let armedPayload = null;
-  let timer = null;
-  let recordStartedAt = null;
-  let submitted = false;
-  let focusLosses = 0;
-
-  const $ = id => document.getElementById(id);
-  const show = id => $(id).classList.remove('hidden');
-  const hide = id => $(id).classList.add('hidden');
-
-  window.addEventListener('load', () => {
-    $('micBtn').addEventListener('click', enableMicrophone);
-    $('stopBtn').addEventListener('click', stopAndSubmit);
-    installGuardrails();
-    sendToOpener({type:'xx-recorder-loaded'});
-  });
-
-  window.addEventListener('message', evt => {
-    if (!window.opener || evt.source !== window.opener) return;
-    const data = evt.data || {};
-    if (data.type === 'xx-arm' && data.payload) {
-      armedPayload = data.payload;
-      beginPromptFlow();
-    }
-  });
-
-  async function enableMicrophone() {
-    $('micBtn').disabled = true;
-    setStatus('setupStatus', 'Requesting microphone permission…', false);
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
-        throw new Error('This browser does not support in-browser audio recording. Try a current Chrome, Edge, Safari, or Firefox browser.');
-      }
-      stream = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1, echoCancellation:true, noiseSuppression:true}});
-      setStatus('setupStatus', 'Microphone ready. Waiting for the assessment prompt…', false);
-      sendToOpener({type:'xx-mic-ready'});
-    } catch (err) {
-      $('micBtn').disabled = false;
-      setStatus('setupStatus', 'Microphone error: ' + messageOf(err), true);
-    }
-  }
-
-  function beginPromptFlow() {
-    hide('setup');
-    show('active');
-    $('prompt').textContent = armedPayload.prompt || '';
-    const prep = Math.max(0, Number(armedPayload.prepSeconds || 0));
-    if (prep > 0) runCountdown(prep, 'PREPARATION', startRecording);
-    else startRecording();
-  }
-
-  function runCountdown(seconds, phase, done) {
-    clearInterval(timer);
-    if (phase === 'RECORDING') $('phase').innerHTML = '<span class="dot"></span>RECORDING';
-    else $('phase').textContent = phase;
-    document.body.classList.toggle('recording', phase === 'RECORDING');
-    let remaining = seconds;
-    renderTime(remaining);
-    timer = setInterval(() => {
-      remaining--;
-      renderTime(Math.max(0, remaining));
-      if (remaining <= 0) {
-        clearInterval(timer);
-        timer = null;
-        done();
-      }
-    }, 1000);
-  }
-
-  function startRecording() {
-    if (!stream || submitted) return;
-    chunks = [];
-    const mime = chooseMimeType();
-    const options = mime ? {mimeType:mime, audioBitsPerSecond:32000} : {audioBitsPerSecond:32000};
-    try {
-      recorder = new MediaRecorder(stream, options);
-    } catch (_) {
-      recorder = new MediaRecorder(stream);
-    }
-
-    recorder.ondataavailable = evt => { if (evt.data && evt.data.size) chunks.push(evt.data); };
-    recorder.onerror = evt => setStatus('activeStatus', 'Recording error: ' + messageOf(evt.error || evt), true);
-    recorder.onstop = finalizeUpload;
-    recorder.start(250);
-    recordStartedAt = Date.now();
-
-    $('instruction').textContent = 'Speak naturally as if you were handling the situation in real time. Silence counts toward your time; you may stop early when your answer is complete.';
-    show('stopBtn');
-    runCountdown(Math.max(5, Number(armedPayload.recordSeconds || 35)), 'RECORDING', stopAndSubmit);
-  }
-
-  function stopAndSubmit() {
-    if (submitted || !recorder) return;
-    submitted = true;
-    hide('stopBtn');
-    clearInterval(timer);
-    timer = null;
-    $('phase').textContent = 'UPLOADING';
-    $('instruction').textContent = 'Saving your response. Do not close this window yet.';
-    setStatus('activeStatus', 'Preparing audio…', false);
-    try {
-      if (recorder.state !== 'inactive') recorder.stop();
-      else finalizeUpload();
-    } catch (err) {
-      setStatus('activeStatus', 'Unable to stop recording: ' + messageOf(err), true);
-    }
-  }
-
-  function finalizeUpload() {
-    try { if (stream) stream.getTracks().forEach(t => t.stop()); } catch (_) {}
-    const mime = (recorder && recorder.mimeType) || 'audio/webm';
-    const blob = new Blob(chunks, {type:mime});
-    if (!blob.size) {
-      setStatus('activeStatus', 'No audio was captured. Return to the assessment tab; the stage timer is still running.', true);
-      submitted = false;
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onerror = () => setStatus('activeStatus', 'Could not prepare the recording for upload.', true);
-    reader.onloadend = () => {
-      const dataUrl = String(reader.result || '');
-      const comma = dataUrl.indexOf(',');
-      const base64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
-      postRecording(base64, mime, blob.size);
-    };
-    reader.readAsDataURL(blob);
-  }
-
-  function postRecording(base64, mime, byteSize) {
-    if (!armedPayload || !armedPayload.endpoint) {
-      return setStatus('activeStatus', 'Upload endpoint is missing.', true);
-    }
-    setStatus('activeStatus', `Uploading ${Math.round(byteSize/1024)} KB…`, false);
-
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = armedPayload.endpoint;
-    form.style.display = 'none';
-
-    const fields = {
-      kind:'voice',
-      token:armedPayload.token,
-      stage:String(armedPayload.stage),
-      nonce:armedPayload.nonce,
-      signature:armedPayload.signature,
-      mime:mime,
-      durationMs:String(Math.max(0, Date.now() - (recordStartedAt || Date.now()))),
-      audioBase64:base64,
-      focusLosses:String(focusLosses),
-      userAgent:navigator.userAgent
-    };
-
-    Object.keys(fields).forEach(name => {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = name;
-      input.value = fields[name] == null ? '' : String(fields[name]);
-      form.appendChild(input);
-    });
-    document.body.appendChild(form);
-    form.submit();
-  }
-
-  function installGuardrails() {
-    document.addEventListener('contextmenu', e => e.preventDefault());
-    document.addEventListener('copy', e => e.preventDefault());
-    document.addEventListener('paste', e => e.preventDefault());
-    document.addEventListener('keydown', e => {
-      const key = String(e.key || '').toLowerCase();
-      if ((e.ctrlKey || e.metaKey) && ['c','v','x','u','s','p'].includes(key)) e.preventDefault();
-    });
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden' && armedPayload && !submitted) focusLosses++;
-    });
-  }
-
-  function chooseMimeType() {
-    const types = ['audio/webm;codecs=opus','audio/mp4','audio/webm','audio/ogg;codecs=opus'];
-    for (const t of types) {
-      try { if (MediaRecorder.isTypeSupported(t)) return t; } catch (_) {}
-    }
-    return '';
-  }
-
-  function setStatus(id, text, isError) {
-    const el = $(id);
-    el.textContent = text;
-    el.classList.toggle('error', !!isError);
-    show(id);
-  }
-
-  function renderTime(seconds) {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    $('timer').textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-  }
-
-  function sendToOpener(message) {
-    try { if (window.opener) window.opener.postMessage(message, '*'); } catch (_) {}
-  }
-
-  function messageOf(err) {
-    return err && err.message ? err.message : String(err || 'Unknown error');
-  }
-})();
-</script>
+  <script>
+    const INITIAL_TOKEN = <?!= JSON.stringify(initialToken) ?>;
+  </script>
+  <?!= include('Client'); ?>
 </body>
 </html>
