@@ -2,32 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>XX Standard Voice Response</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>XX Standard — Call Response</title>
   <style>
     :root{--green:#123528;--green2:#0E2A25;--gold:#B28E5C;--cream:#F5F2EC;--white:#fff;--muted:#6F756F;--line:#D9D3C9;--danger:#8A3434}
     *{box-sizing:border-box}
-    html,body{margin:0;background:var(--cream);font-family:Arial,sans-serif;color:var(--green2);min-height:100%}
-    .shell{max-width:760px;margin:0 auto;padding:26px 16px 50px}
-    .brandbar{display:flex;align-items:center;gap:12px;margin-bottom:20px}
-    .mark{width:46px;height:46px;background:#fff;border:1px solid var(--gold);display:grid;place-items:center;color:var(--green);font-weight:700}
-    .brand{font-weight:700;color:var(--green);letter-spacing:.03em}
-    .sub{font-size:12px;color:var(--muted);margin-top:2px}
-    .card{background:#fff;border:1px solid rgba(178,142,92,.7);border-radius:14px;padding:30px;box-shadow:0 8px 26px rgba(14,42,37,.05)}
-    h1{font-size:26px;color:var(--green);margin:0 0 12px}
-    p{line-height:1.6}
-    .primary{background:var(--green);color:#E8E1D7;border:0;border-radius:9px;padding:13px 18px;font-weight:700;cursor:pointer;font-size:14px}
-    .primary:disabled{opacity:.45;cursor:not-allowed}
+    html,body{margin:0;background:var(--cream);color:var(--green2);font-family:Arial,sans-serif}
+    body{min-height:100vh}
+    .shell{max-width:720px;margin:0 auto;padding:28px 18px 50px}
+    .brandbar{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+    .mark{width:48px;height:48px;border:1px solid var(--gold);display:grid;place-items:center;font-weight:700;letter-spacing:.06em;color:var(--green);background:#fff}
+    .brand{font-weight:700;letter-spacing:.04em;color:var(--green);font-size:18px}.sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .card{background:var(--white);border:1px solid rgba(178,142,92,.7);border-radius:14px;padding:30px;box-shadow:0 8px 26px rgba(14,42,37,.05)}
+    h1{font-size:27px;line-height:1.2;color:var(--green);margin:0 0 12px}p{line-height:1.6}
+    .primary{background:var(--green);color:#E8E1D7;border:0;border-radius:9px;padding:13px 18px;font-weight:700;cursor:pointer;font-size:14px}.primary:disabled{opacity:.45;cursor:not-allowed}
     .hidden{display:none!important}
-    .prompt{margin:18px 0;padding:20px;background:#FBFAF7;border:1px solid var(--line);border-radius:10px;font-size:16px;line-height:1.7;user-select:none;-webkit-user-select:none}
+    .callbox{margin:18px 0;padding:22px;background:#FBFAF7;border:1px solid var(--line);border-radius:10px;text-align:center}
+    .phone{width:52px;height:52px;margin:0 auto 12px;border:1px solid var(--gold);border-radius:50%;display:grid;place-items:center;font-size:24px;color:var(--green);background:#fff}
     .timer{font-size:42px;font-variant-numeric:tabular-nums;font-weight:700;color:var(--green);margin:18px 0 6px}
     .phase{font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--gold)}
     .recording .timer{color:var(--danger)}
-    .dot{display:inline-block;width:10px;height:10px;background:var(--danger);border-radius:50%;margin-right:7px;animation:pulse 1s infinite}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+    .dot{display:inline-block;width:10px;height:10px;background:var(--danger);border-radius:50%;margin-right:7px;animation:pulse 1s infinite}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
     .micro{font-size:12px;color:var(--muted)}
-    .status{padding:12px;border:1px solid var(--line);border-radius:9px;background:#FCFBF8;font-size:13px;line-height:1.5;margin-top:16px}
-    .error{color:var(--danger)}
+    .status{padding:12px;border:1px solid var(--line);border-radius:9px;background:#FCFBF8;font-size:13px;line-height:1.5;margin-top:16px}.error{color:var(--danger)}
     @media(max-width:600px){.card{padding:22px}.timer{font-size:36px}}
   </style>
 </head>
@@ -35,55 +32,46 @@
   <main class="shell">
     <div class="brandbar">
       <div class="mark">XX</div>
-      <div><div class="brand">XX Standard</div><div class="sub">Operations Work Sample · Spoken Response</div></div>
+      <div><div class="brand">XX Standard</div><div class="sub">Final Call Response</div></div>
     </div>
 
     <section class="card">
       <div id="setup">
-        <h1>Enable your microphone</h1>
-        <p>Your prompt is still hidden. Click below to grant microphone access. Microphone setup is not timed.</p>
-        <button id="micBtn" class="primary">Enable microphone</button>
+        <h1>Ready for the final call?</h1>
+        <p id="setupText">Enable your microphone first. Then you will hear the customer call once. Recording starts automatically when the call ends.</p>
+        <button id="micBtn" class="primary">Enable microphone & continue</button>
         <div id="setupStatus" class="status hidden"></div>
-        <p class="micro">Once permission is ready, your prompt appears and the 35-second recording begins immediately. Upload time is not part of your answer clock.</p>
+        <p class="micro">Your microphone is not recorded while the customer call is playing.</p>
       </div>
 
       <div id="active" class="hidden">
-        <div id="phase" class="phase">RECORDING</div>
-        <div id="prompt" class="prompt"></div>
-        <div id="timer" class="timer">00:35</div>
-        <p id="instruction">Speak when ready. Recording begins as soon as the prompt appears, and silence counts toward your time.</p>
+        <div id="phase" class="phase">CUSTOMER CALL</div>
+        <div class="callbox">
+          <div class="phone">☎</div>
+          <strong id="callLabel">Listen carefully</strong>
+          <p id="instruction">The customer call is playing. Your response begins immediately afterward.</p>
+          <button id="fallbackPlayBtn" class="primary hidden">Play customer call</button>
+        </div>
+        <div id="timer" class="timer">CALL</div>
         <button id="stopBtn" class="primary hidden">Stop & submit early</button>
-        <button id="retryBtn" class="primary hidden">Retry upload</button>
         <div id="activeStatus" class="status hidden"></div>
       </div>
     </section>
   </main>
 
-  <iframe id="armFrame" name="xxArmFrame" class="hidden" title=""></iframe>
-  <iframe id="uploadFrame" name="xxUploadFrame" class="hidden" title=""></iframe>
-
 <script>
 (() => {
-  const params = new URLSearchParams(window.location.search);
-  const token = String(params.get('token') || '').trim();
-  const stage = Number(params.get('stage') || 0);
-  const endpoint = String(params.get('endpoint') || '').trim();
-  const recorderLoadedAt = Date.now();
-
+  let initPayload = null;
+  let recordPayload = null;
   let stream = null;
+  let callAudio = null;
   let recorder = null;
   let chunks = [];
-  let armedPayload = null;
   let timer = null;
   let recordStartedAt = null;
-  let recordStoppedAt = null;
   let submitted = false;
   let focusLosses = 0;
-  let micRequestStartedAt = null;
-  let armRequestId = '';
-  let uploadRequestId = '';
-  let lastUpload = null;
-  let uploadTimeout = null;
+  let callStartReported = false;
 
   const $ = id => document.getElementById(id);
   const show = id => $(id).classList.remove('hidden');
@@ -91,119 +79,118 @@
 
   window.addEventListener('load', () => {
     $('micBtn').addEventListener('click', enableMicrophone);
+    $('fallbackPlayBtn').addEventListener('click', playCustomerCall);
     $('stopBtn').addEventListener('click', stopAndSubmit);
-    $('retryBtn').addEventListener('click', retryUpload);
     installGuardrails();
-    installBridgeMessaging();
+    sendToOpener({type:'xx-recorder-loaded'});
+  });
 
-    if (!token || !stage || !/^https:\/\//i.test(endpoint)) {
-      $('micBtn').disabled = true;
-      setStatus('setupStatus', 'This voice-response link is incomplete. Return to your XX Standard assessment and try the spoken stage again.', true);
+  window.addEventListener('message', evt => {
+    if (!window.opener || evt.source !== window.opener) return;
+    const data = evt.data || {};
+
+    if (data.type === 'xx-init' && data.payload) {
+      initPayload = data.payload;
+      if (String(initPayload.phase || '') === 'RESPONDING') {
+        $('setupText').textContent = 'Your spoken response is already in progress. Enable your microphone to reconnect; the original timer continues.';
+        $('micBtn').textContent = 'Enable microphone & resume';
+      }
+      return;
+    }
+
+    if (data.type === 'xx-record-now' && data.payload) {
+      recordPayload = data.payload;
+      startRecording();
     }
   });
 
-  function installBridgeMessaging() {
-    window.addEventListener('message', evt => {
-      const data = evt.data || {};
-
-      if (data.type === 'xx-voice-arm-result' && data.requestId === armRequestId) {
-        const payload = data.payload || {};
-        if (!payload.ok) {
-          $('micBtn').disabled = false;
-          setStatus('setupStatus', 'Unable to start the spoken stage: ' + (payload.message || 'Unknown error'), true);
-          return;
-        }
-        if (String(payload.token || '') !== token || Number(payload.stage) !== stage) {
-          $('micBtn').disabled = false;
-          setStatus('setupStatus', 'The spoken stage could not be verified. Return to the assessment and try again.', true);
-          return;
-        }
-        armedPayload = payload;
-        beginPromptFlow();
-        return;
-      }
-
-      if (data.type === 'xx-voice-upload-result' && data.requestId === uploadRequestId) {
-        clearTimeout(uploadTimeout);
-        uploadTimeout = null;
-        if (!data.ok) {
-          submitted = false;
-          show('retryBtn');
-          setStatus('activeStatus', (data.title ? data.title + ': ' : '') + (data.message || 'The upload could not be completed.'), true);
-          $('phase').textContent = 'UPLOAD PROBLEM';
-          $('instruction').textContent = 'Your recording is still held on this page. Retry the upload; you will not need to record again.';
-          return;
-        }
-        hide('retryBtn');
-        $('phase').textContent = 'SAVED';
-        $('instruction').textContent = 'Response saved. Continuing to the next stage…';
-        setStatus('activeStatus', 'Saved successfully. Returning to the assessment…', false);
-        setTimeout(returnToAssessment, 450);
-      }
-    });
-  }
-
   async function enableMicrophone() {
+    if (!initPayload) {
+      setStatus('setupStatus', 'Waiting for the assessment tab. If this remains here, close this window and reopen the recorder.', true);
+      return;
+    }
+
     $('micBtn').disabled = true;
-    micRequestStartedAt = Date.now();
     setStatus('setupStatus', 'Requesting microphone permission…', false);
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
         throw new Error('This browser does not support in-browser audio recording. Try a current Chrome, Edge, Safari, or Firefox browser.');
       }
       stream = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1, echoCancellation:true, noiseSuppression:true}});
-      const micReadyAt = Date.now();
-      setStatus('setupStatus', 'Microphone ready. Loading your prompt…', false);
-      requestArmPayload(micReadyAt);
+      hide('setup');
+      show('active');
+
+      if (String(initPayload.phase || '') === 'RESPONDING') {
+        $('phase').textContent = 'RECONNECTING';
+        $('timer').textContent = '…';
+        $('callLabel').textContent = 'Reconnecting to active response';
+        $('instruction').textContent = 'The original response timer is still running.';
+        sendToOpener({type:'xx-voice-resume-ready'});
+      } else {
+        playCustomerCall();
+      }
     } catch (err) {
       $('micBtn').disabled = false;
       setStatus('setupStatus', 'Microphone error: ' + messageOf(err), true);
     }
   }
 
-  function requestArmPayload(micReadyAt) {
-    armRequestId = makeId('arm');
-    const q = new URLSearchParams({
-      voiceBridge:'1',
-      token:token,
-      stage:String(stage),
-      requestId:armRequestId,
-      permissionMs:String(Math.max(0, micReadyAt - (micRequestStartedAt || micReadyAt))),
-      recorderLoadedAt:String(recorderLoadedAt),
-      micReadyAt:String(micReadyAt)
-    });
-    $('armFrame').src = endpoint + (endpoint.includes('?') ? '&' : '?') + q.toString();
-  }
+  function playCustomerCall() {
+    if (!initPayload || !initPayload.audioUrl) {
+      return setStatus('activeStatus', 'Customer-call audio is unavailable. Return to the assessment tab and reopen the recorder.', true);
+    }
 
-  function beginPromptFlow() {
-    hide('setup');
-    show('active');
-    $('prompt').textContent = armedPayload.prompt || '';
-    const prep = Math.max(0, Number(armedPayload.prepSeconds || 0));
-    if (prep > 0) runCountdown(prep, 'PREPARATION', startRecording);
-    else startRecording();
-  }
+    hide('fallbackPlayBtn');
+    $('phase').textContent = 'CUSTOMER CALL';
+    $('timer').textContent = 'CALL';
+    $('callLabel').textContent = 'Listen carefully';
+    $('instruction').textContent = 'The customer call is playing. Recording begins automatically when it ends.';
 
-  function runCountdown(seconds, phase, done) {
-    clearInterval(timer);
-    if (phase === 'RECORDING') $('phase').innerHTML = '<span class="dot"></span>RECORDING';
-    else $('phase').textContent = phase;
-    document.body.classList.toggle('recording', phase === 'RECORDING');
-    let remaining = seconds;
-    renderTime(remaining);
-    timer = setInterval(() => {
-      remaining--;
-      renderTime(Math.max(0, remaining));
-      if (remaining <= 0) {
-        clearInterval(timer);
-        timer = null;
-        done();
+    try { if (callAudio) { callAudio.pause(); callAudio.src = ''; } } catch (_) {}
+    callAudio = new Audio(initPayload.audioUrl);
+    callAudio.preload = 'auto';
+
+    callAudio.addEventListener('play', () => {
+      if (!callStartReported) {
+        callStartReported = true;
+        sendToOpener({type:'xx-voice-call-started'});
       }
-    }, 1000);
+    }, {once:true});
+
+    callAudio.addEventListener('ended', () => {
+      callAudio = null;
+      $('phase').textContent = 'RESPOND NEXT';
+      $('timer').textContent = '…';
+      $('callLabel').textContent = 'Call complete';
+      $('instruction').textContent = 'Recording is starting now. Respond as if you were speaking with the customer live.';
+      sendToOpener({type:'xx-voice-call-ended'});
+    }, {once:true});
+
+    callAudio.addEventListener('error', () => {
+      setStatus('activeStatus', 'The customer call could not play. Check your connection/audio and try again.', true);
+      show('fallbackPlayBtn');
+      sendToOpener({type:'xx-voice-audio-error'});
+    }, {once:true});
+
+    const promise = callAudio.play();
+    if (promise && typeof promise.catch === 'function') {
+      promise.catch(() => {
+        setStatus('activeStatus', 'Your browser blocked automatic audio. Tap the button below to play the customer call.', false);
+        show('fallbackPlayBtn');
+      });
+    }
   }
 
   function startRecording() {
-    if (!stream || submitted) return;
+    if (!stream || submitted || !recordPayload) return;
+
+    const remaining = Math.max(0, Math.ceil((Number(recordPayload.recordEndsAt || 0) - Date.now()) / 1000));
+    if (remaining < 2) {
+      $('phase').textContent = 'TIME EXPIRED';
+      $('timer').textContent = '00:00';
+      return setStatus('activeStatus', 'The recording window has expired. Return to the assessment tab.', true);
+    }
+
     chunks = [];
     const mime = chooseMimeType();
     const options = mime ? {mimeType:mime, audioBitsPerSecond:32000} : {audioBitsPerSecond:32000};
@@ -219,26 +206,42 @@
     recorder.start(250);
     recordStartedAt = Date.now();
 
-    $('instruction').textContent = 'Speak naturally as if you were handling the situation in real time. Silence counts toward your time; you may stop early when your answer is complete.';
+    document.body.classList.add('recording');
+    $('phase').innerHTML = '<span class="dot"></span>RECORDING';
+    $('callLabel').textContent = 'Respond to Rachel now';
+    $('instruction').textContent = recordPayload.responseInstruction || 'Respond naturally as if you were handling the call live.';
     show('stopBtn');
-    runCountdown(Math.max(5, Number(armedPayload.recordSeconds || 35)), 'RECORDING', stopAndSubmit);
+    runRecordingCountdown(remaining);
+  }
+
+  function runRecordingCountdown(seconds) {
+    clearInterval(timer);
+    let remaining = seconds;
+    renderTime(remaining);
+    timer = setInterval(() => {
+      remaining--;
+      renderTime(Math.max(0, remaining));
+      if (remaining <= 0) {
+        clearInterval(timer);
+        timer = null;
+        stopAndSubmit();
+      }
+    }, 1000);
   }
 
   function stopAndSubmit() {
     if (submitted || !recorder) return;
     submitted = true;
-    recordStoppedAt = Date.now();
     hide('stopBtn');
     clearInterval(timer);
     timer = null;
     $('phase').textContent = 'UPLOADING';
-    $('instruction').textContent = 'Saving your response. Upload time does not count against your answer.';
+    $('instruction').textContent = 'Saving your response. Do not close this window yet.';
     setStatus('activeStatus', 'Preparing audio…', false);
     try {
       if (recorder.state !== 'inactive') recorder.stop();
       else finalizeUpload();
     } catch (err) {
-      submitted = false;
       setStatus('activeStatus', 'Unable to stop recording: ' + messageOf(err), true);
     }
   }
@@ -248,61 +251,42 @@
     const mime = (recorder && recorder.mimeType) || 'audio/webm';
     const blob = new Blob(chunks, {type:mime});
     if (!blob.size) {
-      setStatus('activeStatus', 'No audio was captured. Return to the assessment and try the spoken stage again.', true);
+      setStatus('activeStatus', 'No audio was captured. Return to the assessment tab immediately.', true);
       submitted = false;
       return;
     }
 
     const reader = new FileReader();
-    reader.onerror = () => {
-      submitted = false;
-      setStatus('activeStatus', 'Could not prepare the recording for upload.', true);
-    };
+    reader.onerror = () => setStatus('activeStatus', 'Could not prepare the recording for upload.', true);
     reader.onloadend = () => {
       const dataUrl = String(reader.result || '');
       const comma = dataUrl.indexOf(',');
       const base64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
-      lastUpload = {
-        base64:base64,
-        mime:mime,
-        byteSize:blob.size,
-        durationMs:Math.max(0, (recordStoppedAt || Date.now()) - (recordStartedAt || (recordStoppedAt || Date.now())))
-      };
-      submitUpload(lastUpload);
+      postRecording(base64, mime, blob.size);
     };
     reader.readAsDataURL(blob);
   }
 
-  function submitUpload(payload) {
-    if (!armedPayload || !armedPayload.endpoint || !payload) {
-      submitted = false;
-      show('retryBtn');
-      return setStatus('activeStatus', 'Upload information is missing.', true);
+  function postRecording(base64, mime, byteSize) {
+    if (!recordPayload || !recordPayload.endpoint) {
+      return setStatus('activeStatus', 'Upload endpoint is missing.', true);
     }
-
-    uploadRequestId = makeId('upload');
-    const uploadStartedAt = Date.now();
-    hide('retryBtn');
-    setStatus('activeStatus', `Uploading ${Math.round(payload.byteSize/1024)} KB…`, false);
+    setStatus('activeStatus', `Uploading ${Math.round(byteSize/1024)} KB…`, false);
 
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = armedPayload.endpoint;
-    form.target = 'xxUploadFrame';
+    form.action = recordPayload.endpoint;
     form.style.display = 'none';
 
     const fields = {
       kind:'voice',
-      returnMode:'bridge',
-      requestId:uploadRequestId,
-      token:armedPayload.token,
-      stage:String(armedPayload.stage),
-      nonce:armedPayload.nonce,
-      signature:armedPayload.signature,
-      mime:payload.mime,
-      durationMs:String(payload.durationMs),
-      uploadStartedAt:String(uploadStartedAt),
-      audioBase64:payload.base64,
+      token:recordPayload.token,
+      stage:String(recordPayload.stage),
+      nonce:recordPayload.nonce,
+      signature:recordPayload.signature,
+      mime:mime,
+      durationMs:String(Math.max(0, Date.now() - (recordStartedAt || Date.now()))),
+      audioBase64:base64,
       focusLosses:String(focusLosses),
       userAgent:navigator.userAgent
     };
@@ -314,32 +298,8 @@
       input.value = fields[name] == null ? '' : String(fields[name]);
       form.appendChild(input);
     });
-
     document.body.appendChild(form);
     form.submit();
-    form.remove();
-
-    clearTimeout(uploadTimeout);
-    uploadTimeout = setTimeout(() => {
-      submitted = false;
-      show('retryBtn');
-      $('phase').textContent = 'UPLOAD DELAY';
-      $('instruction').textContent = 'The upload response is taking longer than expected. Your recording is still held on this page; retrying is safe.';
-      setStatus('activeStatus', 'The network is taking longer than expected. Tap Retry upload.', true);
-    }, 30000);
-  }
-
-  function retryUpload() {
-    if (!lastUpload) return;
-    submitted = true;
-    $('phase').textContent = 'UPLOADING';
-    $('instruction').textContent = 'Retrying the same recording. You do not need to answer again.';
-    submitUpload(lastUpload);
-  }
-
-  function returnToAssessment() {
-    const q = new URLSearchParams({token:token, resume:'1'});
-    window.location.replace(endpoint + (endpoint.includes('?') ? '&' : '?') + q.toString());
   }
 
   function installGuardrails() {
@@ -351,7 +311,7 @@
       if ((e.ctrlKey || e.metaKey) && ['c','v','x','u','s','p'].includes(key)) e.preventDefault();
     });
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden' && armedPayload && !submitted) focusLosses++;
+      if (document.visibilityState === 'hidden' && initPayload && !submitted) focusLosses++;
     });
   }
 
@@ -376,9 +336,8 @@
     $('timer').textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
   }
 
-  function makeId(prefix) {
-    try { if (crypto && crypto.randomUUID) return prefix + '-' + crypto.randomUUID(); } catch (_) {}
-    return prefix + '-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+  function sendToOpener(message) {
+    try { if (window.opener) window.opener.postMessage(message, '*'); } catch (_) {}
   }
 
   function messageOf(err) {
